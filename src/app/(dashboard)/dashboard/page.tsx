@@ -1,33 +1,18 @@
 import { HydrationBoundary, dehydrate } from '@tanstack/react-query';
 import { getQueryClient } from '@/lib/get-query-client';
 import { verifySession } from '@/lib/verify-session';
-import { getDictionary, type Locale } from '@/lib/i18n';
 import { authKeys } from '@/features/auth/api/query-keys';
 import { getCurrentUserServer } from '@/features/auth/api/server-fetch';
 import { DashboardHeader } from '@/components/layouts/dashboard-header';
 import { DashboardSidebar } from '@/components/layouts/dashboard-sidebar';
 
-interface DashboardPageProps {
-  params: Promise<{ lang: string }>;
-}
-
-/**
- * Dashboard Page — RSC Prefetching blueprint.
- *
- * Demonstrates the full HydrationBoundary pattern from PRD Section 5:
- * 1. getQueryClient() — singleton per request
- * 2. prefetchQuery — fetch server-side using native fetch
- * 3. dehydrate + HydrationBoundary — pass to client components
- */
-export default async function DashboardPage({ params }: DashboardPageProps) {
-  const { lang } = await params;
-  const [dict, session, queryClient] = await Promise.all([
-    getDictionary(lang as Locale),
+export default async function DashboardPage() {
+  const [session, queryClient] = await Promise.all([
     verifySession(),
     Promise.resolve(getQueryClient()),
   ]);
 
-  const userName = typeof session?.name === 'string' ? session.name : 'User';
+  const userName = typeof session?.name === 'string' ? session.name : 'Pengguna';
 
   // Prefetch the current user data so the client gets it without a loading state
   await queryClient.prefetchQuery({
@@ -38,25 +23,23 @@ export default async function DashboardPage({ params }: DashboardPageProps) {
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
       <div className="flex h-screen overflow-hidden">
-        <DashboardSidebar lang={lang} dict={dict.dashboard.navigation} />
+        <DashboardSidebar />
         <div className="flex flex-1 flex-col overflow-hidden">
           <DashboardHeader
-            lang={lang}
             userName={userName}
-            logoutLabel={dict.auth.logout.button}
           />
           <main
             id="main-content"
             className="flex-1 overflow-y-auto p-6"
-            aria-label="Dashboard main content"
+            aria-label="Konten utama dashboard"
           >
             {/* Welcome Banner */}
             <div className="mb-8">
               <h1 className="text-3xl font-bold tracking-tight">
-                {dict.dashboard.welcome.replace('{name}', userName)}
+                Selamat Datang, {userName}!
               </h1>
               <p className="text-muted-foreground mt-1">
-                {new Intl.DateTimeFormat(lang === 'id' ? 'id-ID' : 'en-US', {
+                {new Intl.DateTimeFormat('id-ID', {
                   weekday: 'long',
                   year: 'numeric',
                   month: 'long',
@@ -68,10 +51,10 @@ export default async function DashboardPage({ params }: DashboardPageProps) {
             {/* Stats Grid */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
               {[
-                { label: 'Total Users', value: '—', change: '+12%' },
-                { label: 'Active Sessions', value: '—', change: '+4%' },
-                { label: 'Requests Today', value: '—', change: '+8%' },
-                { label: 'Error Rate', value: '—', change: '-2%' },
+                { label: 'Total Pengguna', value: '—', change: '+12%' },
+                { label: 'Sesi Aktif', value: '—', change: '+4%' },
+                { label: 'Permintaan Hari Ini', value: '—', change: '+8%' },
+                { label: 'Tingkat Kesalahan', value: '—', change: '-2%' },
               ].map((stat) => (
                 <div
                   key={stat.label}
@@ -82,7 +65,7 @@ export default async function DashboardPage({ params }: DashboardPageProps) {
                   </p>
                   <p className="mt-1 text-2xl font-bold">{stat.value}</p>
                   <p className="text-muted-foreground mt-1 text-xs">
-                    {stat.change} from last period
+                    {stat.change} dari periode sebelumnya
                   </p>
                 </div>
               ))}

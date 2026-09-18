@@ -5,20 +5,14 @@ import { usePathname } from 'next/navigation';
 import { LayoutDashboard, User, Settings } from 'lucide-react';
 import { useUIStore } from '@/store/ui.store';
 import { cn } from '@/lib/utils';
-import type { Dictionary } from '@/lib/dictionaries/en';
-
-interface DashboardSidebarProps {
-  lang: string;
-  dict: Dictionary['dashboard']['navigation'];
-}
 
 const navItems = [
-  { key: 'dashboard' as const, icon: LayoutDashboard, href: 'dashboard' },
-  { key: 'profile' as const, icon: User, href: 'profile' },
-  { key: 'settings' as const, icon: Settings, href: 'settings' },
+  { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, href: 'dashboard' },
+  { key: 'profile', label: 'Profil', icon: User, href: 'profile' },
+  { key: 'settings', label: 'Pengaturan', icon: Settings, href: 'settings' },
 ];
 
-export function DashboardSidebar({ lang, dict }: DashboardSidebarProps) {
+export function DashboardSidebar() {
   const pathname = usePathname();
   const { isSidebarOpen } = useUIStore();
 
@@ -43,15 +37,15 @@ export function DashboardSidebar({ lang, dict }: DashboardSidebarProps) {
 
       {/* Navigation */}
       <nav aria-label="Main navigation" className="flex-1 space-y-1 p-3">
-        {navItems.map(({ key, icon: Icon, href }) => {
-          const fullPath = `/${lang}/${href}`;
+        {navItems.map(({ key, label, icon: Icon, href }) => {
+          const fullPath = `/${href}`;
           const isActive = pathname === fullPath || pathname.startsWith(`${fullPath}/`);
 
           return (
             <Link
               key={key}
               href={fullPath}
-              aria-label={dict[key]}
+              aria-label={label}
               aria-current={isActive ? 'page' : undefined}
               className={cn(
                 'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
@@ -61,7 +55,7 @@ export function DashboardSidebar({ lang, dict }: DashboardSidebarProps) {
               )}
             >
               <Icon size={18} aria-hidden="true" className="shrink-0" />
-              {isSidebarOpen && <span className="truncate">{dict[key]}</span>}
+              {isSidebarOpen && <span className="truncate">{label}</span>}
             </Link>
           );
         })}

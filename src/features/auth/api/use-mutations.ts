@@ -51,8 +51,7 @@ export const useLogout = () => {
       toast.success('You have been signed out.');
 
       // Redirect to login
-      const lang = document.documentElement.lang ?? 'en';
-      window.location.href = `/${lang}/login`;
+      window.location.href = '/login';
     },
     onError: () => {
       toast.error('Failed to sign out. Please try again.');

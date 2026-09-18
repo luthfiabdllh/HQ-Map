@@ -7,15 +7,11 @@ import { useUIStore } from '@/store/ui.store';
 import { useLogout } from '@/features/auth/api/use-mutations';
 
 interface DashboardHeaderProps {
-  lang: string;
   userName: string;
-  logoutLabel: string;
 }
 
 export function DashboardHeader({
-  lang: _lang,
   userName,
-  logoutLabel,
 }: DashboardHeaderProps) {
   const { toggleSidebar } = useUIStore();
   const logoutMutation = useLogout();
@@ -63,7 +59,7 @@ export function DashboardHeader({
           size="icon"
           onClick={() => logoutMutation.mutate()}
           disabled={logoutMutation.isPending}
-          aria-label={logoutLabel}
+          aria-label="Keluar"
         >
           <LogOut size={18} aria-hidden="true" />
         </Button>

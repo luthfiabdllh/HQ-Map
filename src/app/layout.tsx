@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
+import { Toaster } from '@/components/ui/sonner';
+import { QueryProvider } from '@/providers/query-provider';
 import './globals.css';
 
 const geistSans = Geist({
@@ -14,32 +16,30 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: 'Enterprise Next.js Template',
-    template: '%s | Enterprise Next.js Template',
+    default: 'Template Enterprise Next.js',
+    template: '%s | Template Enterprise Next.js',
   },
   description:
-    'A scalable, modular, enterprise-grade Next.js 16 template with TypeScript, TanStack Query, Zustand, and more.',
+    'Template Next.js enterprise-grade yang modular dan skalabel.',
   metadataBase: new URL(
     process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
   ),
 };
 
-/**
- * Root Layout — HTML shell only.
- * No business logic, providers, or auth here.
- * All that lives in [lang]/layout.tsx.
- */
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="id" suppressHydrationWarning>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {children}
+        <QueryProvider>
+          {children}
+          <Toaster richColors position="top-right" />
+        </QueryProvider>
       </body>
     </html>
   );

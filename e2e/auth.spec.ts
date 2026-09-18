@@ -10,24 +10,17 @@ const VALID_USER = {
 
 test.describe('Authentication Flow', () => {
   test.describe('Login Page', () => {
-    test('shows login form at /en/login', async ({ page }) => {
-      await page.goto(`${BASE_URL}/en/login`);
+    test('shows login form at /login', async ({ page }) => {
+      await page.goto(`${BASE_URL}/login`);
 
-      await expect(page).toHaveTitle(/login/i);
-      await expect(page.getByLabel('Email address')).toBeVisible();
-      await expect(page.getByLabel('Password')).toBeVisible();
+      await expect(page).toHaveTitle(/Masuk/i);
+      await expect(page.getByLabel('Email')).toBeVisible();
+      await expect(page.getByLabel('Kata Sandi')).toBeVisible();
       await expect(page.locator('#login-submit')).toBeVisible();
     });
 
-    test('shows Indonesian UI at /id/login', async ({ page }) => {
-      await page.goto(`${BASE_URL}/id/login`);
-
-      await expect(page.getByLabel('Alamat email')).toBeVisible();
-      await expect(page.getByLabel('Kata sandi')).toBeVisible();
-    });
-
     test('shows validation errors for empty form submission', async ({ page }) => {
-      await page.goto(`${BASE_URL}/en/login`);
+      await page.goto(`${BASE_URL}/login`);
 
       await page.locator('#login-submit').click();
 
@@ -36,10 +29,10 @@ test.describe('Authentication Flow', () => {
     });
 
     test('shows email validation error for invalid email', async ({ page }) => {
-      await page.goto(`${BASE_URL}/en/login`);
+      await page.goto(`${BASE_URL}/login`);
 
-      await page.getByLabel('Email address').fill('not-an-email');
-      await page.getByLabel('Password').fill('ValidPass1');
+      await page.getByLabel('Email').fill('not-an-email');
+      await page.getByLabel('Kata Sandi').fill('ValidPass1');
       await page.locator('#login-submit').click();
 
       await expect(page.locator('#login-email-error')).toBeVisible();
@@ -49,10 +42,10 @@ test.describe('Authentication Flow', () => {
     });
 
     test('shows password validation error for short password', async ({ page }) => {
-      await page.goto(`${BASE_URL}/en/login`);
+      await page.goto(`${BASE_URL}/login`);
 
-      await page.getByLabel('Email address').fill('user@example.com');
-      await page.getByLabel('Password').fill('123');
+      await page.getByLabel('Email').fill('user@example.com');
+      await page.getByLabel('Kata Sandi').fill('123');
       await page.locator('#login-submit').click();
 
       await expect(page.locator('#login-password-error')).toBeVisible();
@@ -63,22 +56,14 @@ test.describe('Authentication Flow', () => {
   });
 
   test.describe('Protected Routes', () => {
-    test('redirects unauthenticated user from /en/dashboard to /en/login', async ({ page }) => {
+    test('redirects unauthenticated user from /dashboard to /login', async ({ page }) => {
       // Ensure no auth cookie is set
       await page.context().clearCookies();
 
-      await page.goto(`${BASE_URL}/en/dashboard`);
+      await page.goto(`${BASE_URL}/dashboard`);
 
       // Should be redirected to login
-      await expect(page).toHaveURL(/\/en\/login/);
-    });
-
-    test('redirects unauthenticated user from /id/dashboard to /id/login', async ({ page }) => {
-      await page.context().clearCookies();
-
-      await page.goto(`${BASE_URL}/id/dashboard`);
-
-      await expect(page).toHaveURL(/\/id\/login/);
+      await expect(page).toHaveURL(/\/login/);
     });
   });
 
@@ -95,28 +80,15 @@ test.describe('Authentication Flow', () => {
         },
       ]);
 
-      await page.goto(`${BASE_URL}/en/dashboard`);
+      await page.goto(`${BASE_URL}/dashboard`);
 
       // Even if auth fails in Server Component, check the page loaded
       // (in real test, would use a valid JWT)
       const logoutButton = page.locator('#logout-button');
       if (await logoutButton.isVisible()) {
-        await expect(logoutButton).toHaveAttribute('aria-label', 'Sign out');
+        await expect(logoutButton).toHaveAttribute('aria-label', 'Keluar');
       }
     });
   });
 });
 
-test.describe('i18n Routing', () => {
-  test('root / redirects to a locale-prefixed path', async ({ page }) => {
-    await page.goto(`${BASE_URL}/`);
-    // Should redirect somewhere with a lang prefix
-    await expect(page).toHaveURL(/\/(en|id)\//);
-  });
-
-  test('404 page for invalid locale', async ({ page }) => {
-    const response = await page.goto(`${BASE_URL}/xx/dashboard`);
-    // Should return 404 for unsupported locale
-    expect(response?.status()).toBe(404);
-  });
-});
