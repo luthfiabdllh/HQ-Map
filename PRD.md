@@ -101,15 +101,33 @@ Catatan: data survey topografi asli belum tersedia saat proyek dimulai — tahap
 
 ## 8. Roadmap & Milestone
 
-| Fase | Kegiatan |
-| --- | --- |
-| 1. Persiapan data | Survey topografi lahan, pengumpulan data kontur |
-| 2. Modeling dasar | Belajar Blender + BlenderGIS, import kontur, modeling dasar terrain |
-| 3. Modeling detail | Tambah pohon, bangunan, kolam sesuai rencana tata letak |
-| 4. Struktur data | Susun daftar lokasi/marker beserta kategori dan konten popup |
-| 5. Setup web | Setup project Next.js + React Three Fiber, load model GLB ke scene |
-| 6. Fitur interaktif | Implementasi marker, popup, kontrol kamera, filter, pencarian, rute |
-| 7. Uji & polish | Uji performa, penyesuaian tampilan, uji coba ke calon pengguna (investor/tim teknis) |
+| Fase | Kegiatan | Status |
+| --- | --- | --- |
+| 1. Persiapan data | Survey topografi lahan, pengumpulan data kontur | ⏳ Menunggu survey |
+| 2. Modeling dasar | Belajar Blender + BlenderGIS, import kontur, modeling dasar terrain | ⏳ Menunggu data survey |
+| 3. Modeling detail | Tambah pohon, bangunan, kolam sesuai rencana tata letak | ⏳ Menunggu fase 2 |
+| 4. Struktur data | Susun daftar lokasi/marker beserta kategori dan konten popup | ✅ Selesai — `src/data/lokasi.ts` (10 lokasi placeholder) |
+| 5. Setup web | Setup project Next.js + React Three Fiber, load model GLB ke scene | ✅ Selesai — lihat catatan di bawah |
+| 6. Fitur interaktif | Implementasi marker, popup, kontrol kamera, filter, pencarian, rute | ✅ Selesai (marker, popup, filter, search, fly-to camera) |
+| 7. Uji & polish | Uji performa, penyesuaian tampilan, uji coba ke calon pengguna (investor/tim teknis) | ⏳ Menunggu model GLB final |
+
+**Catatan Fase 5 & 6 (selesai 2026-09-18):**
+
+Infrastruktur web 3D sudah berjalan di route `/peta` (publik, tanpa login):
+- `three` + `@react-three/fiber` + `@react-three/drei` terinstal
+- Scene full-screen dengan `MapControls` (pan/zoom bergaya peta, tanpa rotasi bebas)
+- Langit siang hari (`Sky`), pencahayaan directional + ambient + hemisphere
+- Terrain placeholder (plane datar + grid helper) — siap diganti GLB Blender
+- Marker 3D per lokasi (warna berbeda per kategori, animasi bobbing + hover scale)
+- Popup info HTML (`<Html>` drei) dengan nama, deskripsi, jam operasional
+- Zustand store (`src/store/peta.store.ts`) untuk state: selectedLokasi, visibleKategori, kameraTarget
+- Panel kontrol floating (pojok kiri atas): search autocomplete + filter kategori toggle
+- Animasi kamera fly-to (lerp) saat user memilih lokasi dari search
+
+**Langkah penggantian terrain ke GLB Blender (saat model tersedia):**
+1. Letakkan file di `public/models/terrain.glb`
+2. Ganti `TerrainPlaceholder` di `PetaCanvas.tsx` dengan `useGLTF('/models/terrain.glb')`
+3. Update koordinat `posisi` di `src/data/lokasi.ts` sesuai koordinat aktual Blender
 
 ## 9. Risiko & Batasan
 

@@ -1,6 +1,8 @@
-# Enterprise Next.js Template
+# HQ-Map — Peta 3D Interaktif Agrowisata
 
-A production-ready, enterprise-grade Next.js 16 starter template with a complete **authentication domain**, **i18n** (English + Indonesian), **TanStack Query**, **Zustand**, **shadcn/ui**, **Vitest**, **Playwright**, and **GitHub Actions CI/CD** — ready to clone and ship.
+Aplikasi web 3D interaktif berbasis **React Three Fiber** + **Next.js 16** untuk memetakan kawasan agrowisata perkebunan secara visual. Dirancang sebagai alat presentasi bagi investor/stakeholder sekaligus alat kerja teknis untuk tim perencanaan.
+
+> 🌿 Akses peta di: [http://localhost:3000/peta](http://localhost:3000/peta) — publik, tanpa login.
 
 ---
 
@@ -10,12 +12,9 @@ A production-ready, enterprise-grade Next.js 16 starter template with a complete
 - [Project Structure](#project-structure)
 - [Getting Started](#getting-started)
 - [Environment Variables](#environment-variables)
-- [Architecture](#architecture)
-  - [Two-Layer Auth Security](#two-layer-auth-security)
-  - [BFF Route Handlers](#bff-route-handlers)
-  - [Server State vs. UI State](#server-state-vs-ui-state)
-  - [i18n (Internationalization)](#i18n-internationalization)
-- [Adding a New Feature Domain](#adding-a-new-feature-domain)
+- [Arsitektur Peta 3D](#arsitektur-peta-3d)
+- [Menambah Fitur / Feature Domain](#menambah-fitur--feature-domain)
+- [Auth & Keamanan](#auth--keamanan)
 - [Testing](#testing)
 - [CI/CD Pipeline](#cicd-pipeline)
 - [Available Scripts](#available-scripts)
@@ -24,11 +23,12 @@ A production-ready, enterprise-grade Next.js 16 starter template with a complete
 
 ## Tech Stack
 
-| Category | Technology |
+| Kategori | Teknologi |
 |---|---|
 | **Framework** | Next.js 16 (App Router, Turbopack) |
 | **Language** | TypeScript 5 (strict mode) |
-| **Styling** | Tailwind CSS v4 (CSS-first) + shadcn/ui (Nova preset) |
+| **Rendering 3D** | React Three Fiber + `@react-three/drei` |
+| **Styling** | Tailwind CSS v4 (CSS-first) + shadcn/ui |
 | **UI Components** | shadcn/ui + Radix UI + Lucide Icons |
 | **Server State** | TanStack Query v5 (+ RSC prefetching) |
 | **UI State** | Zustand v5 |
@@ -37,9 +37,9 @@ A production-ready, enterprise-grade Next.js 16 starter template with a complete
 | **Auth** | httpOnly cookies + `jose` (JWT verification) |
 | **Env Validation** | T3 Env (`@t3-oss/env-nextjs`) |
 | **Unit Tests** | Vitest + Testing Library |
-| **E2E Tests** | Playwright (Chromium, Firefox, Mobile) |
-| **Git Hooks** | Husky + lint-staged |
-| **CI/CD** | GitHub Actions (5-step pipeline) |
+| **E2E Tests** | Playwright (Chromium, Mobile) |
+| **Git Hooks** | Husky v9 + lint-staged |
+| **CI/CD** | GitHub Actions |
 
 ---
 
@@ -48,57 +48,61 @@ A production-ready, enterprise-grade Next.js 16 starter template with a complete
 ```
 src/
 ├── app/                          # Next.js App Router
-│   ├── layout.tsx                # Root layout (HTML shell only)
-│   ├── page.tsx                  # Root page → redirects to /en
+│   ├── layout.tsx                # Root layout (HTML, providers, Toaster)
+│   ├── page.tsx                  # Root → redirect ke /dashboard
 │   ├── globals.css               # Tailwind v4 + shadcn CSS variables
-│   ├── [lang]/                   # Locale segment (en | id)
-│   │   ├── layout.tsx            # Lang layout: providers + Toaster
-│   │   ├── page.tsx              # → redirects to /[lang]/dashboard
-│   │   ├── error.tsx             # Error boundary (client)
-│   │   ├── (auth)/
-│   │   │   └── login/page.tsx    # Login page (SSG per locale)
-│   │   └── (dashboard)/
-│   │       ├── layout.tsx        # ⚠️ Authoritative JWT check here
-│   │       └── dashboard/page.tsx
+│   ├── peta/
+│   │   └── page.tsx              # 🗺 Halaman peta 3D (publik)
+│   ├── (auth)/
+│   │   └── login/page.tsx        # Halaman login
+│   ├── (dashboard)/
+│   │   ├── layout.tsx            # ⚠️ Authoritative JWT check di sini
+│   │   └── dashboard/page.tsx    # Dashboard utama
 │   └── api/
 │       └── auth/
-│           ├── login/route.ts    # BFF: validates + sets cookie
-│           ├── logout/route.ts   # BFF: clears cookies
-│           └── refresh/route.ts  # BFF: token refresh
+│           ├── login/route.ts    # BFF: validasi + set cookie
+│           ├── logout/route.ts   # BFF: hapus cookie
+│           └── refresh/route.ts  # BFF: refresh token
 ├── components/
-│   ├── ui/                       # shadcn/ui primitives (do not edit)
-│   └── layouts/                  # App shell components
+│   ├── ui/                       # shadcn/ui primitives (jangan diedit langsung)
+│   └── layouts/                  # Shell komponen
 │       ├── dashboard-header.tsx
 │       └── dashboard-sidebar.tsx
+├── data/
+│   └── lokasi.ts                 # 🗺 Data marker lokasi (placeholder, ganti saat GLB tersedia)
 ├── features/
-│   └── auth/                     # Auth feature domain (example)
-│       ├── api/
-│       │   ├── query-keys.ts     # Centralized cache keys
-│       │   ├── server-fetch.ts   # Server-only fetchers
-│       │   ├── use-queries.ts    # TanStack Query hooks
-│       │   └── use-mutations.ts  # TanStack Mutation hooks
+│   ├── auth/                     # Domain autentikasi
+│   │   ├── api/                  # query-keys, server-fetch, hooks
+│   │   ├── components/           # login-form.tsx
+│   │   └── types/index.ts        # Zod schemas + TS types
+│   └── peta/                     # 🗺 Domain peta 3D
 │       ├── components/
-│       │   └── login-form.tsx    # Client form component
+│       │   ├── PetaCanvas.tsx        # Canvas utama (Canvas + OrbitControls)
+│       │   ├── PetaCanvasLoader.tsx  # Client wrapper dynamic import ssr:false
+│       │   ├── PetaControls.tsx      # Panel UI: search + filter kategori
+│       │   ├── PetaControlPad.tsx    # D-pad on-screen (zoom, pan, reset)
+│       │   ├── TerrainPlaceholder.tsx# Terrain sementara (ganti dengan GLB)
+│       │   ├── MarkerGroup.tsx       # Render marker berdasarkan filter aktif
+│       │   ├── Marker.tsx            # Marker 3D per lokasi
+│       │   └── LokasiPopup.tsx       # Popup info (Html dari drei)
 │       ├── hooks/
-│       └── types/index.ts        # Zod schemas + TypeScript types
+│       │   └── useKameraAnimasi.ts   # KameraController: lerp fly-to
+│       └── types.ts                  # LokasiItem, Kategori, WARNA_KATEGORI
 ├── lib/
-│   ├── api-client.ts             # Axios instance + refresh interceptor
+│   ├── api-client.ts             # Axios + refresh interceptor
 │   ├── get-query-client.ts       # Singleton QueryClient (React cache)
-│   ├── i18n.ts                   # Dictionary loader + locale helpers
 │   ├── verify-session.ts         # jose JWT verification (server-only)
-│   ├── utils.ts                  # cn(), formatDate(), etc.
-│   └── dictionaries/
-│       ├── en.ts                 # English translations
-│       └── id.ts                 # Indonesian translations
+│   └── utils.ts                  # cn(), formatDate(), dsb.
 ├── providers/
 │   └── query-provider.tsx        # TanStack Query provider
 ├── store/
-│   └── ui.store.ts               # Zustand UI store (sidebar, theme)
-├── proxy.ts                      # ⚠️ Next.js 16 proxy (NOT middleware.ts)
-└── env.ts                        # T3 Env schema (validated at startup)
+│   ├── ui.store.ts               # Zustand: sidebar, theme
+│   └── peta.store.ts             # 🗺 Zustand: selectedLokasi, visibleKategori, kameraTarget
+├── proxy.ts                      # ⚠️ Next.js 16 proxy (bukan middleware.ts)
+└── env.ts                        # T3 Env schema (divalidasi saat startup)
 
 e2e/
-└── auth.spec.ts                  # Playwright E2E tests
+└── auth.spec.ts                  # Playwright E2E (auth flow)
 
 .github/
 └── workflows/
@@ -109,21 +113,21 @@ e2e/
 
 ## Getting Started
 
-### 1. Clone and install
+### 1. Clone dan install
 
 ```bash
-git clone <your-repo-url> my-app
-cd my-app
+git clone <your-repo-url> hq-map
+cd hq-map
 npm install
 ```
 
-### 2. Configure environment
+### 2. Konfigurasi environment
 
 ```bash
 cp .env.example .env.local
 ```
 
-Edit `.env.local` with your values:
+Edit `.env.local`:
 
 ```env
 BACKEND_API_URL=https://api.your-backend.com
@@ -133,150 +137,135 @@ NEXT_PUBLIC_API_URL=http://localhost:3000/api
 ALLOWED_ORIGINS=http://localhost:3000
 ```
 
-> **Important:** `JWT_SECRET` must be the **same** secret your backend uses to sign JWTs. This template verifies signatures on the server.
+> **Penting:** `JWT_SECRET` harus **sama** dengan yang dipakai backend untuk menandatangani JWT.
 
-### 3. Start developing
+### 3. Mulai development
 
 ```bash
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) — it redirects to `/en/dashboard`, then to `/en/login` if unauthenticated.
+- Buka [http://localhost:3000/peta](http://localhost:3000/peta) → **Peta 3D Agrowisata** (publik)
+- Buka [http://localhost:3000/dashboard](http://localhost:3000/dashboard) → Dashboard (membutuhkan login)
 
 ---
 
 ## Environment Variables
 
-| Variable | Side | Description |
+| Variable | Sisi | Keterangan |
 |---|---|---|
-| `BACKEND_API_URL` | Server | Your backend base URL (e.g. `https://api.example.com`) |
-| `JWT_SECRET` | Server | Secret to verify JWT signatures (min 32 chars) |
-| `ACCESS_TOKEN_TTL` | Server | Access token lifetime in seconds (default: `900`) |
-| `REFRESH_TOKEN_TTL` | Server | Refresh token lifetime in seconds (default: `604800`) |
-| `ALLOWED_ORIGINS` | Server | Comma-separated list of allowed CORS origins |
-| `NEXT_PUBLIC_APP_URL` | Client | Public-facing app URL |
-| `NEXT_PUBLIC_API_URL` | Client | Public-facing BFF API URL (usually `<APP_URL>/api`) |
+| `BACKEND_API_URL` | Server | Base URL backend (contoh: `https://api.example.com`) |
+| `JWT_SECRET` | Server | Secret verifikasi JWT (min 32 karakter) |
+| `ACCESS_TOKEN_TTL` | Server | Masa berlaku access token dalam detik (default: `900`) |
+| `REFRESH_TOKEN_TTL` | Server | Masa berlaku refresh token dalam detik (default: `604800`) |
+| `ALLOWED_ORIGINS` | Server | Daftar origin yang diizinkan (pisah koma) |
+| `NEXT_PUBLIC_APP_URL` | Client | URL publik aplikasi |
+| `NEXT_PUBLIC_API_URL` | Client | URL BFF API publik (biasanya `<APP_URL>/api`) |
 
-All variables are validated at startup via **T3 Env** (`src/env.ts`). The app will throw a descriptive error at boot if any are missing or malformed.
+Semua variabel divalidasi saat startup via **T3 Env** (`src/env.ts`).
 
 ---
 
-## Architecture
+## Arsitektur Peta 3D
 
-### Two-Layer Auth Security
+### Kontrol Kamera
 
-This template implements a deliberate two-layer auth pattern:
+| Platform | Geser (Pan) | Rotasi | Zoom |
+|---|---|---|---|
+| **Desktop** | Klik kiri + seret | Klik kanan + seret | Scroll |
+| **Mobile** | 1 jari | 2 jari drag | 2 jari pinch |
+| **Tombol layar** | D-pad ↑↓←→ | — | Tombol +/− |
+
+### Mengganti Terrain Placeholder dengan Model Blender
+
+Saat model GLB dari Blender sudah tersedia:
+
+1. Letakkan file di `public/models/terrain.glb`
+2. Edit `src/features/peta/components/TerrainPlaceholder.tsx`, ganti isi dengan:
+   ```tsx
+   import { useGLTF } from '@react-three/drei';
+   
+   export function TerrainPlaceholder() {
+     const { scene } = useGLTF('/models/terrain.glb');
+     return <primitive object={scene} />;
+   }
+   ```
+3. Update koordinat `posisi` di `src/data/lokasi.ts` sesuai koordinat aktual di scene Blender.
+
+### Menambah Lokasi Marker
+
+Edit `src/data/lokasi.ts`:
+
+```ts
+{
+  id: 'lokasi-baru',
+  nama: 'Nama Lokasi',
+  kategori: 'kebun', // 'kebun' | 'fasilitas' | 'air' | 'bangunan'
+  posisi: { x: 10, y: 0, z: -20 }, // koordinat 3D
+  deskripsi: 'Deskripsi singkat lokasi ini.',
+  jamOperasional: '08:00 - 17:00',
+}
+```
+
+---
+
+## Auth & Keamanan
+
+### Two-Layer Auth
 
 ```
 Request → [Layer 1: proxy.ts] → [Layer 2: dashboard layout]
 ```
 
 **Layer 1 — `src/proxy.ts` (Thin Check)**
-- Checks cookie *existence* only (is `access_token` cookie set?)
-- Performs CSRF origin validation on mutating requests
-- Does **NOT** verify JWT signatures (prevents logout loops)
-- Redirects to `/[lang]/login` if cookie is missing
+- Cek *keberadaan* cookie saja (`access_token` ada atau tidak)
+- Validasi CSRF origin pada request mutating
+- **TIDAK** verifikasi JWT (mencegah logout loop)
+- Redirect ke `/login` jika cookie tidak ada
 
-**Layer 2 — `src/app/[lang]/(dashboard)/layout.tsx` (Authoritative Check)**
-- Calls `verifySession()` which uses `jose` to verify: signature + algorithm + expiry
-- Even if Layer 1 is bypassed, this layer catches invalid tokens
-- Redirects to `/[lang]/login` if token is invalid or expired
+**Layer 2 — `src/app/(dashboard)/layout.tsx` (Authoritative Check)**
+- Memanggil `verifySession()` — verifikasi signature + algoritma + expiry via `jose`
+- Menangkap token invalid meskipun Layer 1 dilewati
+- Redirect ke `/login` jika token invalid atau expired
 
-> ⚠️ **Never** do JWT verification in `proxy.ts`. Keep it thin. Put authoritative checks in Server Component layouts.
+> ⚠️ **Jangan** verifikasi JWT di `proxy.ts`. Selalu lakukan di Server Component layout.
 
 ### BFF Route Handlers
 
-The `src/app/api/auth/` Route Handlers act as a **Backend For Frontend (BFF)** proxy:
-
-- They receive requests from the client (via Axios)
-- Validate and transform the request
-- Forward to the real backend
-- Set/clear `httpOnly` cookies — **the client JS never touches tokens directly**
-
-The refresh token cookie is path-restricted to `/api/auth/refresh` only, so it can never be sent to other endpoints accidentally.
-
-### Server State vs. UI State
-
-| Concern | Where it lives |
-|---|---|
-| User profile, API data | TanStack Query (`useCurrentUser`, etc.) |
-| Sidebar open/close | Zustand `useUIStore` |
-| Theme preference | Zustand `useUIStore` (persisted to localStorage) |
-
-> **Rule:** Never put API responses or auth state in Zustand. Use TanStack Query for all server/remote state.
-
-#### RSC Prefetching Pattern
-
-Server Components prefetch data so Client Components get it instantly (no loading flash):
-
-```tsx
-// In a Server Component (page.tsx or layout.tsx):
-const queryClient = getQueryClient();
-await queryClient.prefetchQuery({
-  queryKey: authKeys.currentUser(),
-  queryFn: getCurrentUserServer,
-});
-
-return (
-  <HydrationBoundary state={dehydrate(queryClient)}>
-    <ClientComponent /> {/* ← receives data from cache, no loading state */}
-  </HydrationBoundary>
-);
-```
-
-### i18n (Internationalization)
-
-All UI text is available in **English (`en`)** and **Indonesian (`id`)**.
-
-Locale is determined by the URL segment: `/en/...` or `/id/...`.
-
-**Adding a new locale:**
-
-1. Add the locale to `src/lib/i18n.ts`:
-   ```ts
-   export const locales: Locale[] = ['en', 'id', 'fr']; // add 'fr'
-   ```
-
-2. Create the dictionary file `src/lib/dictionaries/fr.ts` typed against `Dictionary`:
-   ```ts
-   import type { Dictionary } from './en';
-   export const fr: Dictionary = { /* ... */ };
-   ```
-
-3. Register it in `getDictionary()` in `src/lib/i18n.ts`.
-
-4. Add to `generateStaticParams()` in `src/app/[lang]/layout.tsx`.
+`src/app/api/auth/` bertindak sebagai **Backend For Frontend (BFF)**:
+- Menerima request dari client (via Axios)
+- Meneruskan ke backend sebenarnya
+- Set/hapus `httpOnly` cookie — **client JS tidak pernah menyentuh token secara langsung**
 
 ---
 
-## Adding a New Feature Domain
+## Menambah Fitur / Feature Domain
 
-Follow the auth feature as a blueprint. Create `src/features/your-feature/`:
+Ikuti struktur domain `auth` sebagai blueprint. Buat `src/features/nama-fitur/`:
 
 ```
-src/features/products/
+src/features/produk/
 ├── api/
-│   ├── query-keys.ts        # productKeys factory
-│   ├── server-fetch.ts      # Server-only fetch functions
-│   ├── use-queries.ts       # useProducts(), useProduct(id)
-│   └── use-mutations.ts     # useCreateProduct(), useDeleteProduct()
+│   ├── query-keys.ts        # Factory cache key
+│   ├── server-fetch.ts      # Fetch server-only (gunakan native fetch)
+│   ├── use-queries.ts       # Hook TanStack Query
+│   └── use-mutations.ts     # Hook TanStack Mutation
 ├── components/
-│   └── product-form.tsx
+│   └── produk-form.tsx
 ├── hooks/
-│   └── use-product-filters.ts
 └── types/
     └── index.ts             # Zod schemas + TS types
 ```
 
 **Checklist:**
-- [ ] Define Zod schemas in `types/index.ts`
-- [ ] Create query key factory in `api/query-keys.ts`
-- [ ] Server-side fetch in `api/server-fetch.ts` (use native `fetch`, not Axios)
-- [ ] Client-side hooks in `api/use-queries.ts` and `api/use-mutations.ts` (use Axios via `apiClient`)
-- [ ] Prefetch in the page's Server Component with `HydrationBoundary`
-- [ ] Add a BFF Route Handler in `src/app/api/your-feature/route.ts` if needed
-- [ ] Write unit tests for schemas and query keys
-- [ ] Add E2E scenarios to `e2e/`
+- [ ] Zod schema di `types/index.ts`
+- [ ] Query key factory di `api/query-keys.ts`
+- [ ] Server fetch di `api/server-fetch.ts` (native `fetch`, bukan Axios)
+- [ ] Client hooks di `api/use-queries.ts` + `use-mutations.ts` (gunakan `apiClient` Axios)
+- [ ] Prefetch di Server Component dengan `HydrationBoundary`
+- [ ] BFF Route Handler di `src/app/api/nama-fitur/route.ts` jika perlu
+- [ ] Unit test untuk schema dan query keys
+- [ ] Skenario E2E di `e2e/`
 
 ---
 
@@ -285,72 +274,57 @@ src/features/products/
 ### Unit Tests (Vitest)
 
 ```bash
-# Run all unit tests
+# Jalankan semua unit test + coverage
 npm run test:unit
 
-# Run in watch mode (during development)
+# Mode watch (saat development)
 npm run test:unit:watch
 ```
 
-Tests are in `src/**/__tests__/` directories. Coverage report is generated in `coverage/`.
-
-**Coverage scope** (files measured):
-- `src/features/**/types/`
-- `src/features/**/api/query-keys.ts`
-- `src/lib/utils.ts`, `src/lib/i18n.ts`, `src/lib/dictionaries/`
-
-> App Router files, components, and browser-only code are excluded — they're covered by Playwright.
+Test berada di `src/**/__tests__/`. Coverage report di folder `coverage/`.
 
 ### E2E Tests (Playwright)
 
 ```bash
-# Install browsers (first time only)
+# Install browser (hanya pertama kali)
 npx playwright install --with-deps chromium
 
-# Run all E2E tests
+# Jalankan semua E2E test
 npm run test:e2e
 
-# Open Playwright UI
+# Buka Playwright UI
 npm run test:e2e:ui
 ```
-
-E2E tests cover:
-- Login form validation (both locales)
-- Protected route redirects
-- i18n routing (valid/invalid locales)
-- Logout button accessibility
 
 ---
 
 ## CI/CD Pipeline
 
-The GitHub Actions workflow (`.github/workflows/ci.yml`) runs on every push to `main` and on all pull requests:
+GitHub Actions (`.github/workflows/ci.yml`) berjalan setiap push ke `main` dan setiap pull request:
 
 ```
-1. Lint          — ESLint across src/
-2. TypeScript    — tsc --noEmit
-3. Unit Tests    — Vitest with coverage
-4. Build         — next build (validates the full app)
-5. E2E Tests     — Playwright on Chromium against the built app
+1. Lint        — ESLint across src/
+2. TypeScript  — tsc --noEmit
+3. Unit Tests  — Vitest with coverage
+4. Build       — next build
+5. E2E Tests   — Playwright on Chromium
 ```
-
-Each step requires the previous to succeed. Build artifacts are passed from the Build step to the E2E step.
 
 ---
 
 ## Available Scripts
 
-| Command | Description |
+| Command | Keterangan |
 |---|---|
 | `npm run dev` | Start development server (Turbopack) |
-| `npm run build` | Build for production |
+| `npm run build` | Build untuk production |
 | `npm run start` | Start production server |
-| `npm run lint` | Run ESLint |
-| `npm run typecheck` | Run TypeScript compiler check |
-| `npm run test:unit` | Run Vitest with coverage |
-| `npm run test:unit:watch` | Run Vitest in watch mode |
-| `npm run test:e2e` | Run Playwright E2E tests |
-| `npm run test:e2e:ui` | Open Playwright UI mode |
+| `npm run lint` | Jalankan ESLint |
+| `npm run typecheck` | TypeScript compiler check |
+| `npm run test:unit` | Vitest dengan coverage |
+| `npm run test:unit:watch` | Vitest mode watch |
+| `npm run test:e2e` | Playwright E2E tests |
+| `npm run test:e2e:ui` | Playwright UI mode |
 
 ---
 
